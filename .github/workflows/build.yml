@@ -225,6 +225,25 @@ jobs:
           cp client_resolvers.simple.txt dist/client_resolvers.txt || true
           cp server_config.toml.simple dist/server_config.toml || true
 
+      - name: Prepare smoke-test config (Windows)
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: powershell
+        run: |
+          $path = "dist/client_config.toml"
+          if (Test-Path $path) {
+            $content = Get-Content $path -Raw
+            $content = $content -replace 'ENCRYPTION_KEY\s*=\s*""', 'ENCRYPTION_KEY = "smoke-test-key"'
+            Set-Content -Path $path -Value $content -Encoding UTF8
+          }
+
+      - name: Prepare smoke-test config (non-Windows)
+        if: ${{ matrix.os != 'windows-latest' }}
+        shell: bash
+        run: |
+          if [ -f dist/client_config.toml ]; then
+            sed -i 's/^ENCRYPTION_KEY[[:space:]]*=[[:space:]]*""/ENCRYPTION_KEY = "smoke-test-key"/' dist/client_config.toml || true
+          fi
+
       - name: Smoke test executables (Windows)
         if: ${{ matrix.os == 'windows-latest' }}
         shell: powershell
