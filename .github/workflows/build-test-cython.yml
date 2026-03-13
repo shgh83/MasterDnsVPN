@@ -164,7 +164,12 @@ jobs:
         if: ${{ matrix.platform == 'Linux-Legacy' }}
         shell: bash
         run: |
-          docker run --rm -v "${{ github.workspace }}:/work" -w /work python:3.11-bullseye bash -c "
+          docker run --rm \
+          -e HOST_UID="$(id -u)" \
+          -e HOST_GID="$(id -g)" \
+          -v "${{ github.workspace }}:/work" \
+          -w /work \
+          python:3.11-bullseye bash -c "
           set -euo pipefail
           apt-get update
           apt-get install -y --no-install-recommends build-essential
@@ -175,7 +180,7 @@ jobs:
           python build_verify_extensions.py
           pyinstaller --onefile --icon=assets/masterdnsvpn.ico --name 'MasterDnsVPN_Client_${{ matrix.platform }}_${{ matrix.arch }}' build_client_entry.py
           pyinstaller --onefile --icon=assets/masterdnsvpn.ico --name 'MasterDnsVPN_Server_${{ matrix.platform }}_${{ matrix.arch }}' build_server_entry.py
-          chown -R \$(id -u):\$(id -g) dist/ build/ *.spec || true
+          chown -R \$HOST_UID:\$HOST_GID dist/ build/ *.spec || true
           "
 
       - name: Bundle config templates with executables

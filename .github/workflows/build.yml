@@ -6,6 +6,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   preflight:
     name: Preflight - suggest secrets & generate tag
@@ -111,7 +114,12 @@ jobs:
       - name: Build client & server (Linux-Legacy via Docker)
         if: ${{ matrix.platform == 'Linux-Legacy' }}
         run: |
-          docker run --rm -v ${{ github.workspace }}:/work -w /work python:3.11-bullseye bash -c "pip install pyinstaller && pip install -r requirements.txt && pip check && pyinstaller --onefile --icon=assets/masterdnsvpn.ico --name 'MasterDnsVPN_Client_${{ matrix.platform }}_${{ matrix.arch }}' client.py && pyinstaller --onefile --icon=assets/masterdnsvpn.ico --name 'MasterDnsVPN_Server_${{ matrix.platform }}_${{ matrix.arch }}' server.py && chown -R $(id -u):$(id -g) dist/ build/ *.spec || true"
+          docker run --rm \
+            -e HOST_UID="$(id -u)" \
+            -e HOST_GID="$(id -g)" \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            python:3.11-bullseye bash -c "pip install pyinstaller && pip install -r requirements.txt && pip check && pyinstaller --onefile --icon=assets/masterdnsvpn.ico --name 'MasterDnsVPN_Client_${{ matrix.platform }}_${{ matrix.arch }}' client.py && pyinstaller --onefile --icon=assets/masterdnsvpn.ico --name 'MasterDnsVPN_Server_${{ matrix.platform }}_${{ matrix.arch }}' server.py && chown -R \$HOST_UID:\$HOST_GID dist/ build/ *.spec || true"
 
       - name: Bundle config templates with executables
         shell: bash
